@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Component Details</h2>
+<ul>
+    <li><strong>Part ID:</strong> {{ component.part_id }}</li>
+    <li><strong>Name:</strong> {{ component.name }}</li>
+    <li><strong>Type:</strong> {{ component.type }}</li>
+    <li><strong>Manufacturer:</strong> {{ component.manufacturer }}</li>
+    <li><strong>Specs:</strong> <pre>{{ component.specs }}</pre></li>
+    <li><strong>Status:</strong> {{ component.status }}</li>
+    <li><strong>Location:</strong> {{ component.location }}</li>
+    <li><strong>Notes:</strong> <pre>{{ component.notes }}</pre></li>
+</ul>
