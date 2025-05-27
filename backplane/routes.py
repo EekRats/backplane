@@ -1,6 +1,6 @@
 from flask import render_template, redirect, url_for, request
 from . import db
-from .models import Component, System
+from .models import Component, System, Tag
 from .forms import ComponentForm, SystemForm
 from flask import current_app as app
 import os
@@ -14,16 +14,34 @@ from flask_wtf import FlaskForm
 class DummyForm(FlaskForm):
     pass
 
+# for handling commas-eperated tags for items
+def process_tags(tag_string):
+    tag_names = [t.strip().lower() for t in tag_string.split(',') if t.strip()]
+    tags = []
+    for name in tag_names:
+        tag = Tag.query.filter_by(name=name).first()
+        if not tag:
+            tag = Tag(name=name)
+            db.session.add(tag)
+        tags.append(tag)
+    return tags
+
 @app.route('/')
 def index():
     query = request.args.get('q', '')
     if query:
+        from sqlalchemy import func
+        like = f"%{query.lower()}%"
         components = Component.query.filter(
             db.or_(
-                Component.part_id.ilike(f'%{query}%'),
-                Component.name.ilike(f'%{query}%'),
-                Component.type.ilike(f'%{query}%'),
-                Component.manufacturer.ilike(f'%{query}%')
+                func.lower(Component.part_id).like(like),
+                func.lower(Component.name).like(like),
+                func.lower(Component.type).like(like),
+                func.lower(Component.manufacturer).like(like),
+                func.lower(Component.specs).like(like),
+                func.lower(Component.status).like(like),
+                func.lower(Component.location).like(like),
+                Component.tags.any(func.lower(Tag.name).like(like))
             )
         ).all()
     else:
@@ -42,8 +60,12 @@ def add_component():
         prefix = default_type.upper()
         count = Component.query.filter_by(type=prefix).count() + 1
         form.part_id.data = f"{prefix}-{count:04}"
-
+    from flask import flash
     if form.validate_on_submit():
+        existing = Component.query.filter_by(part_id=form.part_id.data).first()
+        if existing:
+            flash(f"A component with Part ID '{form.part_id.data}' already exists. Choose a different ID.", "error")
+            return render_template('add_component.html', form=form)
         new = Component(
             part_id=form.part_id.data,
             name=form.name.data,
@@ -56,6 +78,7 @@ def add_component():
             notes=form.notes.data,
             system=form.system_id.data
         )
+        new.tags = process_tags(form.tags.data)
         db.session.add(new)
         db.session.commit()
         return redirect(url_for('index'))
@@ -72,10 +95,24 @@ def view_component(component_id):
 def edit_component(component_id):
     component = Component.query.get_or_404(component_id)
     form = ComponentForm(obj=component)
+    if request.method == 'GET':
+        form.tags.data = ', '.join(tag.name for tag in component.tags)
     if form.validate_on_submit():
-        form.populate_obj(component)
+        component.part_id = form.part_id.data
+        component.name = form.name.data
+        component.type = form.type.data
+        component.manufacturer = form.manufacturer.data
+        component.year = form.year.data
+        component.specs = form.specs.data
+        component.location = form.location.data
+        component.status = form.status.data
+        component.notes = form.notes.data
+        component.system = form.system_id.data
+        component.tags = process_tags(form.tags.data)
+
         db.session.commit()
         return redirect(url_for('view_component', component_id=component.id))
+
     return render_template('edit_component.html', form=form, component=component)
 
 @app.route('/delete/<int:component_id>', methods=['GET'])
@@ -192,3 +229,9 @@ def download_system_file(system_id, filename):
     from flask import send_from_directory
     folder = os.path.join(app.config['UPLOAD_FOLDER'], f'systems/{system_id}')
     return send_from_directory(folder, filename, as_attachment=True)
+
+@app.route('/tags/<string:tag_name>')
+def components_by_tag(tag_name):
+    tag = Tag.query.filter_by(name=tag_name.lower()).first_or_404()
+    components = tag.components
+    return render_template('components_by_tag.html', tag=tag, components=components)

@@ -10,6 +10,17 @@
     <li><strong>Status:</strong> {{ component.status }}</li>
     <li><strong>Location:</strong> {{ component.location }}</li>
     <li><strong>Notes:</strong> <pre>{{ component.notes }}</pre></li>
+    {% if component.tags %}
+    <p><strong>Tags:</strong>
+        {% for tag in component.tags %}
+        <span class="tag">
+            <a href="{{ url_for('index', q=tag.name) }}">{{ tag.name }}</a>
+        </span>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+    </p>
+    {% endif %}
+    <li><strong>System ID:</strong>{{ component.system_id }}</li>
+
 </ul>
 <a href="{{ url_for('edit_component', component_id=component.id) }}">Edit</a>
 <a href="{{ url_for('delete_component', component_id=component.id) }}" onclick="return confirm('Delete this component?');">Delete</a>

@@ -8,10 +8,11 @@
     {{ form.name.label }} {{ form.name() }}<br>
     {{ form.manufacturer.label }} {{ form.manufacturer() }}<br>
     {{ form.year.label }} {{ form.year() }}<br>
-    {{ form.specs.label }} {{ form.specs() }}<br>
+    {{ form.specs.label }} {{ form.specs(rows=3) }}<br>
     {{ form.location.label }} {{ form.location() }}<br>
     {{ form.status.label }} {{ form.status() }}<br>
     {{ form.notes.label }} {{ form.notes(rows=3) }}<br>
+    {{ form.tags.label }} {{ form.tags() }}<br>
     {{ form.system_id.label }} {{ form.system_id() }}<br>
     {{ form.submit() }}
 </form>

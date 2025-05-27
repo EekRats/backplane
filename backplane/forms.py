@@ -37,6 +37,7 @@ class ComponentForm(FlaskForm):
         ('Unknown', 'Unknown')
     ])
     notes = TextAreaField('Notes')
+    tags = StringField('Tags (CSV)')
 
     def get_systems():
         return System.query.order_by(System.name).all()
