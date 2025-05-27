@@ -3,6 +3,16 @@ from . import db
 from .models import Component, System
 from .forms import ComponentForm, SystemForm
 from flask import current_app as app
+import os
+
+# this and DummyForm needed due to CSRF token issue.
+# need to render {{ form.hiddentag() }} every time that
+# we use a <form method="POST">.
+# This is due to Flask-WTF write-protecting to block CSRF attacks, using a hidden token
+from flask_wtf import FlaskForm
+
+class DummyForm(FlaskForm):
+    pass
 
 @app.route('/')
 def index():
@@ -54,7 +64,9 @@ def add_component():
 @app.route('/component/<int:component_id>')
 def view_component(component_id):
     component = Component.query.get_or_404(component_id)
-    return render_template('view_component.html', component=component)
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component.id}')
+    files = os.listdir(folder) if os.path.exists(folder) else []
+    return render_template('view_component.html', component=component, files=files, form=DummyForm())
 
 @app.route('/edit/<int:component_id>', methods=['GET', 'POST'])
 def edit_component(component_id):
@@ -93,6 +105,13 @@ def list_systems():
     systems = System.query.all()
     return render_template('list_systems.html', systems=systems)
 
+@app.route('/system/<int:system_id>')
+def view_system(system_id):
+    system = System.query.get_or_404(system_id)
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], f'systems/{system.id}')
+    files = os.listdir(folder) if os.path.exists(folder) else []
+    return render_template('view_system.html', system=system, files=files, form=DummyForm())
+
 @app.route('/edit_system/<int:system_id>', methods=['GET', 'POST'])
 def edit_system(system_id):
     system = System.query.get_or_404(system_id)
@@ -119,3 +138,57 @@ def next_part_id(component_type):
     count = Component.query.filter_by(type=component_type.upper()).count() + 1
     next_id = f"{component_type.upper()}-{count:04}"
     return {'next_id': next_id}
+
+@app.route('/upload_component_file/<int:component_id>', methods=['POST'])
+def upload_component_file(component_id):
+    from werkzeug.utils import secure_filename
+    from flask import flash
+    component = Component.query.get_or_404(component_id)
+
+    files = request.files.getlist('file')
+    saved = []
+    for file in files:
+        #if file and allowed_file(file.filename):
+        if file:
+            filename = secure_filename(file.filename)
+            folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component.id}')
+            os.makedirs(folder, exist_ok=True)
+            filepath = os.path.join(folder, filename)
+            file.save(filepath)
+            saved.append(filename)
+
+    flash(f"Uploaded {len(saved)} files.")
+    return redirect(url_for('view_component', component_id=component.id))
+
+@app.route('/download_component_file/<int:component_id>/<filename>')
+def download_component_file(component_id, filename):
+    from flask import send_from_directory
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component_id}')
+    return send_from_directory(folder, filename, as_attachment=True)
+
+@app.route('/upload_system_file/<int:system_id>', methods=['POST'])
+def upload_system_file(system_id):
+    from werkzeug.utils import secure_filename
+    from flask import flash
+    system = System.query.get_or_404(system_id)
+
+    files = request.files.getlist('file')
+    saved = []
+    for file in files:
+        #if file and allowed_file(file.filename):
+        if file:
+            filename = secure_filename(file.filename)
+            folder = os.path.join(app.config['UPLOAD_FOLDER'], f'systems/{system.id}')
+            os.makedirs(folder, exist_ok=True)
+            filepath = os.path.join(folder, filename)
+            file.save(filepath)
+            saved.append(filename)
+
+    flash(f"Uploaded {len(saved)} files.")
+    return redirect(url_for('view_system', system_id=system.id))
+    
+@app.route('/download_system_file/<int:system_id>/<filename>')
+def download_system_file(system_id, filename):
+    from flask import send_from_directory
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], f'systems/{system_id}')
+    return send_from_directory(folder, filename, as_attachment=True)

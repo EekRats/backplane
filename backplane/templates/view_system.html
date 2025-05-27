@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ system.name }}</h2>
+<p><strong>Location:</strong> {{ system.location }}</p>
+<p><strong>Description:</strong> {{ system.description }}</p>
+<p><strong>Notes:</strong> {{ system.notes }}</p>
+<br>
+<h2>Assigned Components</h2>
+<ul>
+    {% for c in system.components %}
+    <li><a href="{{ url_for('view_component', component_id=c.id) }}">{{ c.part_id }} - {{ c.name }}</a></li>
+    {% else %}
+    <li><em>No components assigned.</em></li>
+    {% endfor %}
+</ul>
+<h2>Documentation</h2>
+<ul>
+    {% for filename in files %}
+    <li><a href="{{ url_for('download_system_file', system_id=system.id, filename=filename) }}">{{ filename }}</a></li>
+    {% else %}
+    <li><em>No files uploaded.</em></li>
+    {% endfor %}
+</ul>
+<form action="{{ url_for('upload_system_file', system_id=system.id) }}" method="POST" enctype="multipart/form-data">
+    {{ form.hidden_tag() }}
+    <input type="file" name="file" multiple>
+    <input type="submit" value="Upload Files">
+</form>
+<br>
+<a href="{{ url_for('list_systems') }}"> Back to All Systems</a>
+{% endblock %}

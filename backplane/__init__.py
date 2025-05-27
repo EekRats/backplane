@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from config import Config
+import os
 
 db = SQLAlchemy()
 csrf = CSRFProtect()
@@ -18,3 +19,7 @@ def create_app():
         db.create_all()
 
     return app
+
+def allowed_file(filename):
+    from flask import current_app
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
