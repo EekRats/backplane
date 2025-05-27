@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit System: {{ system.name }}</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.name.label }} {{ form.name() }}<br>
+    {{ form.description.label }} {{ form.description(rows=3) }}<br>
+    {{ form.location.label }} {{ form.location() }}<br>
+    {{ form.notes.label }} {{ form.notes(rows=3) }}<br>
+    {{ form.submit(value="Save Changes") }}
+</form>
+{% endblock %}

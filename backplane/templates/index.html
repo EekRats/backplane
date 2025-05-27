@@ -1,6 +1,13 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Component List</h2>
+<form method="GET" action="{{ url_for('index') }}">
+    <input type="text" name="q" placeholder="Search..." value="{{ query }}">
+    <input type="submit" value="Search">
+</form>
+{% if query %}
+<p>Showing results for "<strong>{{ query }}</strong>" - {{ components|length }} found.</p>
+{% endif %}
 <table>
     <tr>
         <th>Part ID</th><th>Name</th><th>Type</th><th>Status</th><th>Location</th>

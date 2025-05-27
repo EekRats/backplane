@@ -1,6 +1,8 @@
 from flask_wtf import FlaskForm
+from .models import System
 from wtforms import StringField, TextAreaField, SelectField, SubmitField
 from wtforms.validators import DataRequired
+from wtforms_sqlalchemy.fields import QuerySelectField
 
 class ComponentForm(FlaskForm):
     part_id = StringField('Part ID', validators=[DataRequired()])
@@ -20,7 +22,6 @@ class ComponentForm(FlaskForm):
         ('KEYBOARD', 'KEYBOARD'),
         ('MOUSE', 'MOUSE'),
         ('MONITOR', 'MONITOR'),
-        ('SYSTEM', 'SYSTEM'),
         ('PERIPHERAL', 'PERIPHERAL'),
         ('OTHER', 'OTHER')
     ], validators=[DataRequired()])
@@ -35,4 +36,22 @@ class ComponentForm(FlaskForm):
         ('Unknown', 'Unknown')
     ])
     notes = TextAreaField('Notes')
+
+    def get_systems():
+        return System.query.order_by(System.name).all()
+    
+    system_id = QuerySelectField(
+        'Assigned System',
+        query_factory=get_systems,
+        allow_blank=True,
+        get_label='name'
+    )
+
     submit = SubmitField('Add Component')
+
+class SystemForm(FlaskForm):
+    name = StringField('System Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    location = StringField('Location')
+    notes = TextAreaField('Notes')
+    submit = SubmitField('Add System')
