@@ -10,13 +10,14 @@
 {% endif %}
 <table>
     <tr>
-        <th>Part ID</th><th>Name</th><th>Type</th><th>Status</th><th>Location</th>
+        <th>Part ID</th><th>Name</th><th>Type</th><th>Year</th><th>Status</th><th>Location</th>
     </tr>
     {% for c in components %}
     <tr>
         <td><a href="{{ url_for('view_component', component_id=c.id) }}">{{ c.part_id }}</a></td>
         <td>{{ c.name }}</td>
         <td>{{ c.type }}</td>
+        <td>{{ c.year }}</td>
         <td>{{ c.status }}</td>
         <td>{{ c.location }}</td>
     </tr>

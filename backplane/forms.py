@@ -26,6 +26,7 @@ class ComponentForm(FlaskForm):
         ('OTHER', 'OTHER')
     ], validators=[DataRequired()])
     manufacturer = StringField('Manufacturer')
+    year = StringField('Year/Date')
     specs = TextAreaField('Specs')
     location = StringField('Location')
     status = SelectField('Status', choices=[

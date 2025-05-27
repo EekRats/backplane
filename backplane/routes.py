@@ -25,12 +25,21 @@ def index():
 @app.route('/add', methods=['GET', 'POST'])
 def add_component():
     form = ComponentForm()
+    
+    # only autofilling the component ID on the the initilal GET
+    if request.method == 'GET':
+        default_type = form.type.data or 'OTHER'
+        prefix = default_type.upper()
+        count = Component.query.filter_by(type=prefix).count() + 1
+        form.part_id.data = f"{prefix}-{count:04}"
+
     if form.validate_on_submit():
         new = Component(
             part_id=form.part_id.data,
             name=form.name.data,
             type=form.type.data,
             manufacturer=form.manufacturer.data,
+            year=form.year.data,
             specs=form.specs.data,
             location=form.location.data,
             status=form.status.data,
@@ -104,3 +113,9 @@ def delete_system(system_id):
     db.session.delete(system)
     db.session.commit()
     return redirect(url_for('list_systems'))
+
+@app.route('/next_part_id/<string:component_type>')
+def next_part_id(component_type):
+    count = Component.query.filter_by(type=component_type.upper()).count() + 1
+    next_id = f"{component_type.upper()}-{count:04}"
+    return {'next_id': next_id}

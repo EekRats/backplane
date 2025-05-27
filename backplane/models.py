@@ -13,6 +13,7 @@ class Component(db.Model):
     name = db.Column(db.String(100), nullable=False)
     type = db.Column(db.String(50), nullable=False)
     manufacturer = db.Column(db.String(50))
+    year = db.Column(db.String(20))
     specs = db.Column(db.Text)
     location = db.Column(db.String(100))
     status = db.Column(db.String(50))

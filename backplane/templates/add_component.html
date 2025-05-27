@@ -3,10 +3,11 @@
 <h2>Add New Component</h2>
 <form method="POST">
     {{ form.hidden_tag() }}
+    {{ form.type.label }} {{ form.type() }}<br>
     {{ form.part_id.label }} {{ form.part_id() }}<br>
     {{ form.name.label }} {{ form.name() }}<br>
-    {{ form.type.label }} {{ form.type() }}<br>
     {{ form.manufacturer.label }} {{ form.manufacturer() }}<br>
+    {{ form.year.label }} {{ form.year() }}<br>
     {{ form.specs.label }} {{ form.specs() }}<br>
     {{ form.location.label }} {{ form.location() }}<br>
     {{ form.status.label }} {{ form.status() }}<br>
@@ -14,4 +15,19 @@
     {{ form.system_id.label }} {{ form.system_id() }}<br>
     {{ form.submit() }}
 </form>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const typeField = document.querySelector("select[name='type']");
+        const partIdField = document.querySelector("input[name='part_id']");
+
+        typeField.addEventListener("change", function () {
+            const type = typeField.value;
+            fetch(`/next_part_id/${type}`)
+                .then(response => response.json())
+                .then(data => {
+                    partIdField.value = data.next_id;
+                });
+        });
+    });
+</script>
 {% endblock %}
