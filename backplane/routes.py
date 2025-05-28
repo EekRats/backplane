@@ -3,7 +3,7 @@ from . import db
 from .models import Component, System, Tag
 from .forms import ComponentForm, SystemForm
 from flask import current_app as app
-import os
+import os, math
 
 # this and DummyForm needed due to CSRF token issue.
 # need to render {{ form.hiddentag() }} every time that
@@ -56,10 +56,22 @@ def add_component():
     
     # only autofilling the component ID on the the initilal GET
     if request.method == 'GET':
-        default_type = form.type.data or 'OTHER'
+        default_type = form.type.data or 'CPU'
         prefix = default_type.upper()
-        count = Component.query.filter_by(type=prefix).count() + 1
-        form.part_id.data = f"{prefix}-{count:04}"
+        used = Component.query.with_entities(Component.part_id).filter(
+            Component.part_id.like(f"{prefix}-%")
+        ).all()
+        used_numbers = set()
+        for (part_id,) in used:
+            try:
+                num = int(part_id.split("-")[1])
+                used_numbers.add(num)
+            except (IndexError, ValueError):
+                continue
+        i = 1
+        while i in used_numbers:
+            i += 1
+        form.part_id.data = f"{prefix}-{i:04}"
     from flask import flash
     if form.validate_on_submit():
         existing = Component.query.filter_by(part_id=form.part_id.data).first()
@@ -172,8 +184,22 @@ def delete_system(system_id):
 
 @app.route('/next_part_id/<string:component_type>')
 def next_part_id(component_type):
-    count = Component.query.filter_by(type=component_type.upper()).count() + 1
-    next_id = f"{component_type.upper()}-{count:04}"
+    prefix = component_type.upper()
+    existing_ids = Component.query.with_entities(Component.part_id).filter(
+        Component.part_id.like(f'{prefix}-%')
+    ).all()
+
+    used_numbers = set()
+    for (part_id,) in existing_ids:
+        try:
+            number = int(part_id.split('-')[1])
+            used_numbers.add(number)
+        except (IndexError, ValueError):
+            continue
+    i = 1
+    while i in used_numbers:
+        i += 1
+    next_id = f"{prefix}-{i:04}"
     return {'next_id': next_id}
 
 @app.route('/upload_component_file/<int:component_id>', methods=['POST'])
@@ -235,3 +261,13 @@ def components_by_tag(tag_name):
     tag = Tag.query.filter_by(name=tag_name.lower()).first_or_404()
     components = tag.components
     return render_template('components_by_tag.html', tag=tag, components=components)
+
+@app.route('/tags')
+def tag_cloud():
+    from sqlalchemy import func
+    tag_counts = db.session.query(
+        Tag.name, func.count(Component.id)
+    ).join(Component.tags).group_by(Tag.name).all()
+
+    tags = [{'name': name, 'count': count} for name, count in tag_counts]
+    return render_template('tag_cloud.html', tags=tags, math=math)
