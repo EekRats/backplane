@@ -2,7 +2,28 @@
 {% block content %}
 <h2>Component List</h2>
 <form method="GET" action="{{ url_for('index') }}">
-    <input type="text" name="q" placeholder="Search..." value="{{ query }}">
+    <input type="text" name="q" placeholder="Search Components..." value="{{ query }}">
+
+    <select name="status">
+        <option value="">Any Status</option>
+        {% for s in ['In Use', 'In Storage', 'Spare', 'Broken', 'Unknown'] %}
+        <option value="{{ s }}" {% if request.args.get('status') == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="type">
+        <option value="">Any Type</option>
+        {% for group_label, choices in type_groups %}
+        <optgroup label="{{ group_label }}">
+            {% for val, label in choices %}
+            <option value="{{ val }}" {% if request.args.get('type') == val %}selected{% endif %}>
+                {{ label }}
+            </option>
+            {% endfor %}
+        </optgroup>
+        {% endfor %}
+    </select>
+
     <input type="submit" value="Search">
 </form>
 {% if query %}
@@ -16,7 +37,7 @@
     <tr>
         <td><a href="{{ url_for('view_component', component_id=c.id) }}">{{ c.part_id }}</a></td>
         <td>{{ c.name }}</td>
-        <td>{{ c.type }}</td>
+        <td>{{ TYPE_LABELS.get(c.type, c.type) }}</td>
         <td>{{ c.year }}</td>
         <td>{{ c.status }}</td>
         <td>{{ c.location }}</td>

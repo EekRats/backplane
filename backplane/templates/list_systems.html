@@ -10,7 +10,7 @@
         <a href="{{ url_for('delete_system', system_id=sys.id) }}" onclick="return confirm('Delete this system?');">Delete</a>
         <ul>
             {% for c in sys.components %}
-            <li><a href="{{ url_for('view_component', component_id=c.id) }}">{{ c.type }}: {{ c.part_id }} - {{ c.name }}</a></li>
+            <li><a href="{{ url_for('view_component', component_id=c.id) }}">{{ TYPE_LABELS.get(component.type, component.type) }}: {{ c.part_id }} - {{ c.name }}</a></li>
             {% else %}
             <li><em>No components assigned.</em></li>
             {% endfor %}

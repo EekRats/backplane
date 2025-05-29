@@ -2,6 +2,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import CSRFProtect
 from config import Config
+from datetime import datetime
 import os
 
 db = SQLAlchemy()
@@ -17,6 +18,10 @@ def create_app():
     with app.app_context():
         from . import routes
         db.create_all()
+
+        @app.context_processor
+        def inject_globals():
+            return {'current_year': datetime.now().year}
 
     return app
 

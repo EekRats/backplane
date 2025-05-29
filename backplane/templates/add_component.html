@@ -1,9 +1,27 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Add New Component</h2>
+{% for field, errors in form.errors.items() %}
+<div class="alert alert-danger">
+    {{ field }}: {{ errors | join(', ') }}
+</div>
+{% endfor %}
 <form method="POST">
     {{ form.hidden_tag() }}
-    {{ form.type.label }} {{ form.type() }}<br>
+    <label for="type">Type</label>
+    <select name="type" id="type" class="form-control" required>
+        {% for group_label, options in type_groups %}
+        <optgroup label="{{ group_label }}">
+            {% for value, label in options %}
+            <option value="{{ value }}"
+                {% if form.type.data == value %}selected{% endif %}>
+                {{ label }}
+            </option>
+        {% endfor %}
+        </optgroup>
+        {% endfor %}
+    </select>
+    <br>
     {{ form.part_id.label }} {{ form.part_id() }}<br>
     {{ form.name.label }} {{ form.name() }}<br>
     {{ form.manufacturer.label }} {{ form.manufacturer() }}<br>
@@ -11,6 +29,7 @@
     {{ form.specs.label }} {{ form.specs(rows=3) }}<br>
     {{ form.location.label }} {{ form.location() }}<br>
     {{ form.status.label }} {{ form.status() }}<br>
+    {{ form.condition.label }} {{ form.condition() }}<br>
     {{ form.notes.label }} {{ form.notes(rows=3) }}<br>
     {{ form.tags.label }} {{ form.tags() }}<br>
     {{ form.system_id.label }} {{ form.system_id() }}<br>
@@ -21,7 +40,11 @@
         const typeField = document.querySelector("select[name='type']");
         const partIdField = document.querySelector("input[name='part_id']");
 
+        let userModified = false;
+        partIdField.addEventListener("input", () => userModified = true);
+
         typeField.addEventListener("change", function () {
+            if (userModified) return;
             const type = typeField.value;
             fetch(`/next_part_id/${type}`)
                 .then(response => response.json())

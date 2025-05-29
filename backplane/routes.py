@@ -2,6 +2,7 @@ from flask import render_template, redirect, url_for, request
 from . import db
 from .models import Component, System, Tag
 from .forms import ComponentForm, SystemForm
+from config import Config
 from flask import current_app as app
 import os, math
 
@@ -13,6 +14,8 @@ from flask_wtf import FlaskForm
 
 class DummyForm(FlaskForm):
     pass
+
+reverse_labels = {v.lower(): k for k, v in Config.TYPE_LABELS.items()}
 
 # for handling commas-eperated tags for items
 def process_tags(tag_string):
@@ -28,27 +31,54 @@ def process_tags(tag_string):
 
 @app.route('/')
 def index():
-    query = request.args.get('q', '')
+    from sqlalchemy import func, and_
+
+    form = ComponentForm()
+    query = request.args.get('q', '').strip().lower()
+    status_filter = request.args.get('status', '').strip()
+    type_filter = request.args.get('type', '').strip()
+
+    filters = []
+
     if query:
-        from sqlalchemy import func
-        like = f"%{query.lower()}%"
-        components = Component.query.filter(
-            db.or_(
-                func.lower(Component.part_id).like(like),
-                func.lower(Component.name).like(like),
-                func.lower(Component.type).like(like),
-                func.lower(Component.manufacturer).like(like),
-                func.lower(Component.specs).like(like),
-                func.lower(Component.status).like(like),
-                func.lower(Component.location).like(like),
-                Component.tags.any(func.lower(Tag.name).like(like))
-            )
-        ).all()
-    else:
-        components = Component.query.all()
-    return render_template('index.html', components=components, query=query)
-    #components = Component.query.all()
-    #return render_template('index.html', components=components)
+        like = f"%{query}%"
+        
+        matching_type_values = [
+            type_code for label, type_code in reverse_labels.items()
+            if query in label
+        ]
+
+        filters.append(db.or_(
+            func.lower(Component.part_id).like(like),
+            func.lower(Component.name).like(like),
+            func.lower(Component.type).like(like),
+            func.lower(Component.manufacturer).like(like),
+            func.lower(Component.specs).like(like),
+            func.lower(Component.status).like(like),
+            func.lower(Component.condition).like(like),
+            func.lower(Component.location).like(like),
+            Component.tags.any(func.lower(Tag.name).like(like)),
+            Component.type.in_(matching_type_values)
+        ))
+
+    if status_filter:
+        filters.append(Component.status == status_filter)
+
+    if type_filter:
+        filters.append(Component.type == type_filter)
+
+    components = Component.query.filter(and_(*filters)).all()
+
+    return render_template(
+        'index.html',
+        components=components,
+        query=query,
+        status_filter=status_filter,
+        type_filter=type_filter,
+        TYPE_LABELS=Config.TYPE_LABELS,
+        form=form,
+        type_groups=ComponentForm.TYPE_GROUPS
+    )
 
 @app.route('/add', methods=['GET', 'POST'])
 def add_component():
@@ -56,7 +86,7 @@ def add_component():
     
     # only autofilling the component ID on the the initilal GET
     if request.method == 'GET':
-        default_type = form.type.data or 'CPU'
+        default_type = request.args.get("type") or 'OTHR'
         prefix = default_type.upper()
         used = Component.query.with_entities(Component.part_id).filter(
             Component.part_id.like(f"{prefix}-%")
@@ -94,14 +124,19 @@ def add_component():
         db.session.add(new)
         db.session.commit()
         return redirect(url_for('index'))
-    return render_template('add_component.html', form=form)
+    return render_template('add_component.html', form=form, type_groups=ComponentForm.TYPE_GROUPS)
 
 @app.route('/component/<int:component_id>')
 def view_component(component_id):
     component = Component.query.get_or_404(component_id)
     folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component.id}')
     files = os.listdir(folder) if os.path.exists(folder) else []
-    return render_template('view_component.html', component=component, files=files, form=DummyForm())
+    return render_template(
+        'view_component.html',
+        component=component,
+        files=files, form=DummyForm(),
+        TYPE_LABELS=Config.TYPE_LABELS
+        )
 
 @app.route('/edit/<int:component_id>', methods=['GET', 'POST'])
 def edit_component(component_id):
@@ -152,7 +187,7 @@ def add_system():
 @app.route('/systems')
 def list_systems():
     systems = System.query.all()
-    return render_template('list_systems.html', systems=systems)
+    return render_template('list_systems.html', systems=systems, TYPE_LABELS=Config.TYPE_LABELS)
 
 @app.route('/system/<int:system_id>')
 def view_system(system_id):

@@ -26,6 +26,7 @@ class Component(db.Model):
     specs = db.Column(db.Text)
     location = db.Column(db.String(100))
     status = db.Column(db.String(50))
+    condition = db.Column(db.String(25))
     notes = db.Column(db.Text)
     tags = db.relationship('Tag', secondary=component_tags, backref='components')
     system_id = db.Column(db.Integer, db.ForeignKey('system.id'))
