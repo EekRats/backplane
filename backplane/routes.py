@@ -437,3 +437,65 @@ def export_json():
     response = Response(json.dumps(data, indent=2), mimetype='application/json')
     response.headers['Content-Disposition'] = 'attachment; filename=components.json'
     return response
+
+@app.route('/qr/<int:component_id>.png')
+def qr_code(component_id):
+    import qrcode
+    import io
+    from flask import send_file
+
+    component = Component.query.get_or_404(component_id)
+    url = url_for('view_component', component_id=component.id, _external=True)
+    
+    qr = qrcode.QRCode(
+        version=2,
+        error_correction=qrcode.constants.ERROR_CORRECT_Q,
+        box_size=8,
+        border=2,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    img_io = io.BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+
+    return send_file(img_io, mimetype='image/png', as_attachment=True, download_name=f'{component.part_id}.png')
+
+@app.route('/qr/qr_bulk.zip')
+def qr_bulk():
+    import qrcode
+    import io
+    import zipfile
+    from flask import send_file
+
+    components = Component.query.order_by(Component.part_id).all()
+
+    zip_io = io.BytesIO()
+
+    with zipfile.ZipFile(zip_io, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        for c in components:
+            url = url_for('view_component', component_id=c.id, _external=True)
+
+            qr = qrcode.QRCode(
+                version=2,
+                error_correction=qrcode.constants.ERROR_CORRECT_Q,
+                box_size=8,
+                border=2,
+            )
+            qr.add_data(url)
+            qr.make(fit=True)
+
+            img = qr.make_image(fill_color="black", back_color="white")
+
+            img_io = io.BytesIO()
+            img.save(img_io, 'PNG')
+            img_io.seek(0)
+
+            zf.writestr(f'{c.part_id}.png', img_io.read())
+    
+    zip_io.seek(0)
+    
+    return send_file(zip_io, mimetype='application/zip', as_attachment=True, download_name='backplane_qr_codes.zip')

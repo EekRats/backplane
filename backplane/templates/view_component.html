@@ -44,4 +44,7 @@
     <input type="file" name="file" multiple>
     <input type="submit" value="Upload Files">
 </form>
+<p>
+    <a href="{{ url_for('qr_code', component_id=component.id) }}">Download QR Code</a>
+</p>
 {% endblock %}

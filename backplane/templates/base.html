@@ -30,6 +30,7 @@
                                 q=request.args.get('q', ''),
                                 status=request.args.get('status', ''),
                                 type=request.args.get('type', '')) }}">Export JSON</a>
+            <a href="{{ url_for('qr_bulk') }}">QR Code Bulk Download</a>
         </p>
         {% block content %}{% endblock %}
         <footer style="margin-top: 40px; padding: 10px; text-align: center; color: #888;">
