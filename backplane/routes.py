@@ -114,6 +114,8 @@ def add_component():
             type=form.type.data,
             manufacturer=form.manufacturer.data,
             year=form.year.data,
+            interface=form.interface.data,
+            serial_number=form.serial_number.data,
             specs=form.specs.data,
             location=form.location.data,
             status=form.status.data,
@@ -150,6 +152,9 @@ def edit_component(component_id):
         component.type = form.type.data
         component.manufacturer = form.manufacturer.data
         component.year = form.year.data
+        component.interface = form.interface.data
+        component.serial_number = form.serial_number.data
+        component.condition = form.condition.data
         component.specs = form.specs.data
         component.location = form.location.data
         component.status = form.status.data

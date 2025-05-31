@@ -23,6 +23,8 @@ class Component(db.Model):
     type = db.Column(db.String(50), nullable=False)
     manufacturer = db.Column(db.String(50))
     year = db.Column(db.String(20))
+    interface = db.Column(db.String(100))
+    serial_number = db.Column(db.String(250))
     specs = db.Column(db.Text)
     location = db.Column(db.String(100))
     status = db.Column(db.String(50))

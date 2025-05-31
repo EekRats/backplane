@@ -31,7 +31,7 @@
 {% endif %}
 <table>
     <tr>
-        <th>Part ID</th><th>Name</th><th>Type</th><th>Year</th><th>Status</th><th>Location</th>
+        <th>Part ID</th><th>Name</th><th>Type</th><th>Year</th><th>Interface</th><th>Status</th><th>Location</th>
     </tr>
     {% for c in components %}
     <tr>
@@ -39,6 +39,7 @@
         <td>{{ c.name }}</td>
         <td>{{ TYPE_LABELS.get(c.type, c.type) }}</td>
         <td>{{ c.year }}</td>
+        <td>{{ c.interface }}</td>
         <td>{{ c.status }}</td>
         <td>{{ c.location }}</td>
     </tr>
