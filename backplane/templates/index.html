@@ -30,9 +30,87 @@
 <p>Showing results for "<strong>{{ query }}</strong>" - {{ components|length }} found.</p>
 {% endif %}
 <table>
+    {% set current_sort = request.args.get('sort') %}
+    {% set current_order = request.args.get('order', 'asc') %}
     <tr>
-        <th>Part ID</th><th>Name</th><th>Type</th><th>Year</th><th>Interface</th><th>Status</th><th>Location</th>
-    </tr>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='part_id', 
+                                order='asc' if current_sort != 'part_id' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Part ID
+                {% if current_sort == 'part_id' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='name', 
+                                order='asc' if current_sort != 'name' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Name
+                {% if current_sort == 'name' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='type', 
+                                order='asc' if current_sort != 'type' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Type
+                {% if current_sort == 'type' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='year', 
+                                order='asc' if current_sort != 'year' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Year
+                {% if current_sort == 'year' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='interface', 
+                                order='asc' if current_sort != 'interface' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Interface
+                {% if current_sort == 'interface' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='status', 
+                                order='asc' if current_sort != 'status' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Status
+                {% if current_sort == 'status' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+        <th>
+            <a href="{{ url_for('index', 
+                                sort='location', 
+                                order='asc' if current_sort != 'location' else ('desc' if current_order == 'asc' else 'asc'), 
+                                q=request.args.get('q', ''), 
+                                status=request.args.get('status', ''), 
+                                type=request.args.get('type', '')) }}">
+                Location
+                {% if current_sort == 'location' %}{% if current_order == 'asc' %} ^ {% else %} v {% endif %}{% endif %}
+            </a>
+        </th>
+    </tr>    
     {% for c in components %}
     <tr>
         <td><a href="{{ url_for('view_component', component_id=c.id) }}">{{ c.part_id }}</a></td>

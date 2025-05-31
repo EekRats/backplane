@@ -38,6 +38,9 @@ def index():
     status_filter = request.args.get('status', '').strip()
     type_filter = request.args.get('type', '').strip()
 
+    sort_by = request.args.get('sort', 'part_id')
+    order = request.args.get('order', 'asc')
+
     filters = []
 
     if query:
@@ -67,7 +70,16 @@ def index():
     if type_filter:
         filters.append(Component.type == type_filter)
 
-    components = Component.query.filter(and_(*filters)).all()
+    query_obj = Component.query.filter(and_(*filters))
+
+    if hasattr(Component, sort_by):
+        sort_column = getattr(Component, sort_by)
+        if order == 'asc':
+            query_obj = query_obj.order_by(sort_column.asc())
+        else:
+            query_obj = query_obj.order_by(sort_column.desc())
+
+    components = query_obj.all()
 
     return render_template(
         'index.html',
@@ -75,6 +87,7 @@ def index():
         query=query,
         status_filter=status_filter,
         type_filter=type_filter,
+        sort_by=sort_by,
         TYPE_LABELS=Config.TYPE_LABELS,
         form=form,
         type_groups=ComponentForm.TYPE_GROUPS
@@ -311,3 +324,116 @@ def tag_cloud():
 
     tags = [{'name': name, 'count': count} for name, count in tag_counts]
     return render_template('tag_cloud.html', tags=tags, math=math)
+
+# export the entire component database as CSV
+@app.route('/export.csv')
+def export_csv():
+    import csv
+    from io import StringIO
+    from flask import Response
+    from sqlalchemy import func, and_
+    query = request.args.get('q', '').strip().lower()
+    status_filter = request.args.get('status', '').strip()
+    type_filter = request.args.get('type', '').strip()
+    filters = []
+    if query:
+        like = f"%{query}%"
+        matching_type_values = [
+            type_code for label, type_code in reverse_labels.items()
+            if query in label
+        ]
+        filters.append(db.or_(
+            func.lower(Component.part_id).like(like),
+            func.lower(Component.name).like(like),
+            func.lower(Component.type).like(like),
+            func.lower(Component.manufacturer).like(like),
+            func.lower(Component.specs).like(like),
+            func.lower(Component.status).like(like),
+            func.lower(Component.condition).like(like),
+            func.lower(Component.location).like(like),
+            Component.tags.any(func.lower(Tag.name).like(like)),
+            Component.type.in_(matching_type_values)
+        ))
+    if status_filter:
+        filters.append(Component.status == status_filter)
+    if type_filter:
+        filters.append(Component.type == type_filter)
+    query_obj = Component.query.filter(and_(*filters)).order_by(Component.part_id.asc())
+    components = query_obj.all()
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['Part ID', 'Name', 'Type', 'Year', 'Interface', 'Manufacturer', 'Serial Number', 'Specs', 'Status', 'Condition', 'Location', 'Tags', 'Assigned System'])
+    for c in components:
+        writer.writerow([
+            c.part_id,
+            c.name,
+            c.type,
+            c.year,
+            c.interface,
+            c.manufacturer,
+            c.serial_number,
+            c.specs,
+            c.status,
+            c.condition,
+            c.location,
+            ', '.join(tag.name for tag in c.tags),
+            c.system.name if c.system else ''
+        ])
+    response = Response(output.getvalue(), mimetype='text/csv')
+    response.headers['Content-Disposition'] = 'attachment; filename=components.csv'
+    return response
+
+# export the entire component database as JSON
+@app.route('/export.json')
+def export_json():
+    import json
+    from flask import Response
+    from sqlalchemy import func, and_
+    query = request.args.get('q', '').strip().lower()
+    status_filter = request.args.get('status', '').strip()
+    type_filter = request.args.get('type', '').strip()
+    filters = []
+    if query:
+        like = f"%{query}%"
+        matching_type_values = [
+            type_code for label, type_code in reverse_labels.items()
+            if query in label
+        ]
+        filters.append(db.or_(
+            func.lower(Component.part_id).like(like),
+            func.lower(Component.name).like(like),
+            func.lower(Component.type).like(like),
+            func.lower(Component.manufacturer).like(like),
+            func.lower(Component.specs).like(like),
+            func.lower(Component.status).like(like),
+            func.lower(Component.condition).like(like),
+            func.lower(Component.location).like(like),
+            Component.tags.any(func.lower(Tag.name).like(like)),
+            Component.type.in_(matching_type_values)
+        ))
+    if status_filter:
+        filters.append(Component.status == status_filter)
+    if type_filter:
+        filters.append(Component.type == type_filter)
+    query_obj = Component.query.filter(and_(*filters)).order_by(Component.part_id.asc())
+    components = query_obj.all()
+    data = []
+    for c in components:
+        data.append({
+            'part_id': c.part_id,
+            'name': c.name,
+            'type': c.type,
+            'year': c.year,
+            'interface': c.interface,
+            'manufacturer': c.manufacturer,
+            'serial_number': c.serial_number,
+            'specs': c.specs,
+            'status': c.status,
+            'condition': c.condition,
+            'location': c.location,
+            'tags': [tag.name for tag in c.tags],
+            'system': c.system.name if c.system else None
+        })
+    response = Response(json.dumps(data, indent=2), mimetype='application/json')
+    response.headers['Content-Disposition'] = 'attachment; filename=components.json'
+    return response
