@@ -182,7 +182,11 @@ def edit_component(component_id):
 
 @app.route('/delete/<int:component_id>', methods=['GET'])
 def delete_component(component_id):
+    import shutil
     component = Component.query.get_or_404(component_id)
+    folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component.id}')
+    if os.path.exists(folder):
+        shutil.rmtree(folder)
     db.session.delete(component)
     db.session.commit()
     return redirect(url_for('index'))
