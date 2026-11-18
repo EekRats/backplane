@@ -3,7 +3,10 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = 'your-key-here'
+    # Load the signing key from the environment. A committed, shared key lets
+    # anyone forge CSRF tokens and signed cookies. The random fallback keeps a
+    # dev run working but changes on every restart (invalidating sessions).
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32)
     SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(basedir, 'backplane.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = os.path.join(basedir, 'uploads')

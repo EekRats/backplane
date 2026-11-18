@@ -1,5 +1,5 @@
 from flask import render_template, redirect, url_for, request
-from . import db
+from . import db, allowed_file
 from .models import Component, System, Tag
 from .forms import ComponentForm, SystemForm
 from config import Config
@@ -38,7 +38,14 @@ def index():
     status_filter = request.args.get('status', '').strip()
     type_filter = request.args.get('type', '').strip()
 
+    # Only allow sorting by known columns; getattr() on arbitrary user input
+    # can pull non-column attributes and raise, which 500s (and with debug on
+    # would expose the interactive debugger).
+    SORTABLE = {'part_id', 'name', 'type', 'manufacturer', 'year',
+                'status', 'condition', 'location'}
     sort_by = request.args.get('sort', 'part_id')
+    if sort_by not in SORTABLE:
+        sort_by = 'part_id'
     order = request.args.get('order', 'asc')
 
     filters = []
@@ -180,7 +187,7 @@ def edit_component(component_id):
 
     return render_template('edit_component.html', form=form, component=component)
 
-@app.route('/delete/<int:component_id>', methods=['GET'])
+@app.route('/delete/<int:component_id>', methods=['POST'])
 def delete_component(component_id):
     import shutil
     component = Component.query.get_or_404(component_id)
@@ -228,7 +235,7 @@ def edit_system(system_id):
         return redirect(url_for('list_systems'))
     return render_template('edit_system.html', form=form, system=system)
 
-@app.route('/delete_system/<int:system_id>', methods=['GET'])
+@app.route('/delete_system/<int:system_id>', methods=['POST'])
 def delete_system(system_id):
     system = System.query.get_or_404(system_id)
     # turns out we actually need to *unassign* the components before deleting...
@@ -268,8 +275,7 @@ def upload_component_file(component_id):
     files = request.files.getlist('file')
     saved = []
     for file in files:
-        #if file and allowed_file(file.filename):
-        if file:
+        if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             folder = os.path.join(app.config['UPLOAD_FOLDER'], f'components/{component.id}')
             os.makedirs(folder, exist_ok=True)
@@ -295,8 +301,7 @@ def upload_system_file(system_id):
     files = request.files.getlist('file')
     saved = []
     for file in files:
-        #if file and allowed_file(file.filename):
-        if file:
+        if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             folder = os.path.join(app.config['UPLOAD_FOLDER'], f'systems/{system.id}')
             os.makedirs(folder, exist_ok=True)
